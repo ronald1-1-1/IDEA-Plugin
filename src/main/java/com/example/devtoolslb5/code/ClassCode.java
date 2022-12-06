@@ -61,7 +61,7 @@ public class ClassCode implements ICode {
                     isStatic = true;
                     break;
                 default:
-                    throw new GenerateCodeException("Wrong option!");
+                    throw new GenerateCodeException("Wrong option format!");
             }
         }
 
@@ -69,6 +69,22 @@ public class ClassCode implements ICode {
 
         if (!Pattern.matches("^[A-Za-z]+$", name)){
             throw new GenerateCodeException("Wrong pattern format!");
+        }
+
+        List<String[]> fields = new ArrayList<>();
+
+        if (slashes.size() > 3) {
+            for (int i = 3; i < slashes.size(); i++) {
+                String fieldPattern = modifiedPattern.substring(slashes.get(i-1)+1, slashes.get(i));
+                String[] fieldParameters = fieldPattern.split("\\.");
+                if (fieldParameters.length != 2 ||
+                    Pattern.matches("^[0-9]+.*$", fieldParameters[0]) ||
+                    Pattern.matches("^[0-9]+.*$", fieldParameters[1])
+                ) {
+                    throw new GenerateCodeException("Wrong field pattern!");
+                }
+                fields.add(fieldParameters);
+            }
         }
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -84,8 +100,31 @@ public class ClassCode implements ICode {
 
         stringBuilder.append("class ");
         stringBuilder.append(name);
-        stringBuilder.append(" {\n\n\n}");
+        stringBuilder.append(" {\n\n");
 
+        for (String[] fieldParameters : fields) {
+            stringBuilder.append("\tprivate ");
+            stringBuilder.append(fieldParameters[0] + " ");
+            stringBuilder.append(fieldParameters[1] + ";\n");
+        }
+        stringBuilder.append("\n");
+        stringBuilder.append("\tpublic " + name + "(");
+        for (int i = 0; i < fields.size(); i++) {
+            String[] fieldParameters = fields.get(i);
+            stringBuilder.append(fieldParameters[0] + " ");
+            stringBuilder.append(fieldParameters[1]);
+            if (i != fields.size() - 1){
+                stringBuilder.append(",");
+            }
+        }
+        stringBuilder.append(") {\n");
+        for (String[] fieldParameters : fields) {
+            stringBuilder.append("\t\tthis.");
+            stringBuilder.append(fieldParameters[1] + " = ");
+            stringBuilder.append(fieldParameters[1] + ";\n");
+        }
+        stringBuilder.append("\t}\n");
+        stringBuilder.append("}\n");
         code = stringBuilder.toString();
     }
 }
